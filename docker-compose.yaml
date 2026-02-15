@@ -21,6 +21,20 @@ services:
     command: server --console-address ":9001" /data
     mem_limit: 512m
 
+  source-postgres:
+    image: postgres:14
+    container_name: source-postgres
+    command: ["postgres", "-c", "wal_level=logical"]
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: source_db
+      POSTGRES_USER: source_user
+      POSTGRES_PASSWORD: source_pass
+    volumes:
+      - source_postgres_data:/var/lib/postgresql/data
+    mem_limit: 512m
+
   dw-postgres:
     image: postgres:14
     container_name: dw-postgresql
@@ -170,3 +184,4 @@ volumes:
   dw_postgres_data:
   airflow_postgres_data:
   minio_storage:
+  source_postgres_data:
