@@ -34,7 +34,7 @@ def merge_taxi_zone (df,file):
     df_lookup = pd.read_csv(TAXI_ZONE_LOOKUP_PATH)
     def merge_and_rename(df, location_id, lat_col, long_col):
         df = df.merge(df_lookup, left_on=location_id, right_on="LocationID")
-        df = df.drop(columns=["LocationID", "Borough", "service_zone", "zone"])
+        df = df.drop(columns=["LocationID", "Borough", "service_zone", "Zone"])
         df = df.rename(columns={"latitude": lat_col, "longitude": long_col})
 
         return df

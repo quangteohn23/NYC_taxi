@@ -19,7 +19,7 @@ services:
       MINIO_ROOT_USER: minio_access_key
       MINIO_ROOT_PASSWORD: minio_secret_key
     command: server --console-address ":9001" /data
-    mem_limit: 512m
+    mem_limit: 1g
 
   source-postgres:
     image: postgres:14

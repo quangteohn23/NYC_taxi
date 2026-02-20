@@ -19,7 +19,9 @@ def extract_load(endpoint_url, access_key, secret_key):
     datalake_cfg = cfg["datalake"]
     nyc_data_cfg = cfg["nyc_data"]
 
-    minio_wrapper = MinIOClent (
+    target_bucket = datalake_cfg["bucket_name_1"]
+    
+    minio_wrapper = MinIOClient (
         endpoint_url = endpoint_url,
         access_key = access_key,
         secret_key = secret_key
@@ -27,8 +29,7 @@ def extract_load(endpoint_url, access_key, secret_key):
     if not minio_wrapper.client:
         print("Không thể kết nối tới MinIO. Vui lòng kiểm tra cấu hình.")
         return
-
-    minio_wrapper.create_bucket(datalake_cfg["bucket_name_1"])
+    minio_wrapper.create_bucket(target_bucket)
 
     for year in YEARS:
         print(f"\n--- Đang xử lý dữ liệu năm: {year} ---")
@@ -46,7 +47,7 @@ def extract_load(endpoint_url, access_key, secret_key):
                 print(f"Đang tải lên: {file_name} -> {object_name}")
                 
                 minio_wrapper.client.fput_object(
-                    bucket_name=bucket_name,
+                    bucket_name=target_bucket,
                     object_name=object_name,
                     file_path=fp,
                 )
