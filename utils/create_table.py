@@ -8,10 +8,12 @@ def main():
         database=os.getenv("POSTGRES_DB"),
         user=os.getenv("POSTGRES_USER"),
         password=os.getenv("POSTGRES_PASSWORD"),
+        host=os.getenv("POSTGRES_HOST", "localhost"),
+        port=os.getenv("POSTGRES_PORT", "5434")
     )
 
     create_table_iot = """
-        CREATE IF NOT EXISTS iot.taxi_nyc_time_series(
+        CREATE TABLE IF NOT EXISTS iot.taxi_nyc_time_series(
             VendorID                          INT,
             tpep_pickup_datetime     TIMESTAMP WITHOUT TIME ZONE,
             tpep_dropoff_datetime    TIMESTAMP WITHOUT TIME ZONE,
@@ -35,7 +37,7 @@ def main():
     """
 
     create_table_staging = """
-        CREATE IF NOT EXISTS staging.nyc_taxi(
+        CREATE TABLE IF NOT EXISTS staging.nyc_taxi(
             year                    VARCHAR,
             month                   VARCHAR,
             dow                     VARCHAR,
@@ -66,7 +68,7 @@ def main():
 
     try:
         pc.execute_query(create_table_iot)
-        pc.execute_quey(create_table_staging)
+        pc.execute_query(create_table_staging)
     except Exception as e:
         print (f"Failed to create table with error: {e}")
 

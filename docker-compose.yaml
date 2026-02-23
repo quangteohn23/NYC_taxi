@@ -35,16 +35,17 @@ services:
       - source_postgres_data:/var/lib/postgresql/data
     mem_limit: 512m
 
-  dw-postgres:
+  dw-postgresql:
     image: postgres:14
     container_name: dw-postgresql
     command: ["postgres", "-c", "wal_level=logical"]
     ports:
-      - "5432:5432"
+      - "5434:5432"
     environment:
       POSTGRES_DB: nyc_taxi
       POSTGRES_USER: nyc_taxi
       POSTGRES_PASSWORD: nyc_taxi
+      POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - dw_postgres_data:/var/lib/postgresql/data
     healthcheck:

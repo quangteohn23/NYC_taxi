@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 
 class PostgresSQLClient:
     # hàm khởi tạo thông tin kết nối
-    def __init__(self, database, user, password, host="127.0.0.1", port="5432"):
+    def __init__(self, database, user, password, host="localhost", port="5432"):
         self.database = database
         self.user = user
         self.password = password
