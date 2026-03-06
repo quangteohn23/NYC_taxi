@@ -1,0 +1,19 @@
+dbt_nyc:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      port: 5434
+      user: nyc_taxi
+      pass: nyc_taxi
+      database: nyc_taxi
+      schema: public
+    prod:
+      type: postgres
+      host: localhost
+      port: 5434
+      user: nyc_taxi
+      pass: nyc_taxi
+      database: nyc_taxi
+      schema: public

@@ -1,0 +1,70 @@
+config_version: 3.0
+datasources: {}
+
+config_variables_file_path: uncommitted/config_variables.yml
+plugins_directory: plugins/
+
+stores:
+  expectations_store:
+    class_name: ExpectationsStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: expectations/
+  
+  validations_store:
+    class_name: ValidationsStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: uncommitted/validations/
+  
+  evaluation_parameter_store:
+    class_name: EvaluationParameterStore
+    
+  checkpoint_store:
+    class_name: CheckpointStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: checkpoints/
+  
+  profiler_store:
+    class_name: ProfilerStore
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      suppress_store_backend:_id: true
+      base_directory: profilers/
+
+expectations_store_name: expectations_store
+validations_store_name: validations_store
+evaluation_parameter_store_name: evaluation_parameter_store
+profiler_store_name: profiler_store
+
+data_docs_sites:
+  local_site:
+    class_name: SiteBuilder
+    show_how_to_buttons: true
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: uncommitted/data_docs/local_site/
+    site_index_builder:
+      class_name: DefaultSiteIndexBuilder
+
+anonymous_usage_statistics:
+  data_context_id: ec2e8f5e-9559-468f-b182-cada6655e5d4
+  enabled: true
+fluent_datasources:
+  quangteohn12-nyctaxi:
+    type: postgres
+    assets:
+      postgres_taxi_data:
+        type: table
+        order_by: []
+        batch_metadata: {}
+        table_name: nyc_taxi
+        schema_name: staging
+    connection_string: postgresql+psycopg2://nyc_taxi:nyc_taxi@localhost:5434/nyc_taxi
+
+notebooks:
+include_rendered_content:
+  globally: false
+  expectations_suite: false
+  expectation_validation_result: false
