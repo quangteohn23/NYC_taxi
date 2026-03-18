@@ -11,7 +11,7 @@ def main():
         user=os.getenv("POSTGRES_USER"),
         password=os.getenv("POSTGRES_PASSWORD"),
         host=os.getenv("POSTGRES_HOST", "localhost"), 
-        port=os.getenv("POSTGRES_PORT", "5434")
+        port=os.getenv("POSTGRES_PORT", "5432")
     )
 
     create_iot_schema = """CREATE SCHEMA IF NOT EXISTS iot;"""

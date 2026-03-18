@@ -140,7 +140,7 @@ def load_to_staging_table(df):
     """
     Save data after processing to Staging Area (PostgreSQL)
     """
-    URL = f"jdbc:postgresql://{POSTGRES_HOST}:5434/{POSTGRES_DB}"
+    URL = f"jdbc:postgresql://{POSTGRES_HOST}:5432/{POSTGRES_DB}"
     
     # Ghi dữ liệu theo từng lô (batch) để giảm tải cho RAM và Database
     df.write \

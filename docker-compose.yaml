@@ -1,7 +1,6 @@
 version: "3.8"
 
 services:
-
   # =====================================================
   # ===================== DATA LAKE =====================
   # =====================================================
@@ -21,26 +20,26 @@ services:
     command: server --console-address ":9001" /data
     mem_limit: 1g
 
-  source-postgres:
-    image: postgres:14
-    container_name: source-postgres
-    command: ["postgres", "-c", "wal_level=logical"]
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_DB: source_db
-      POSTGRES_USER: source_user
-      POSTGRES_PASSWORD: source_pass
-    volumes:
-      - source_postgres_data:/var/lib/postgresql/data
-    mem_limit: 512m
+  # source-postgres:
+  #   image: postgres:14
+  #   container_name: source-postgres
+  #   command: ["postgres", "-c", "wal_level=logical"]
+  #   ports:
+  #     - "5433:5432"
+  #   environment:
+  #     POSTGRES_DB: source_db
+  #     POSTGRES_USER: source_user
+  #     POSTGRES_PASSWORD: source_pass
+  #   volumes:
+  #     - source_postgres_data:/var/lib/postgresql/data
+  #   mem_limit: 512m
 
   dw-postgresql:
     image: postgres:14
     container_name: dw-postgresql
     command: ["postgres", "-c", "wal_level=logical"]
     ports:
-      - "5434:5432"
+      - "5432:5432"
     environment:
       POSTGRES_DB: nyc_taxi
       POSTGRES_USER: nyc_taxi

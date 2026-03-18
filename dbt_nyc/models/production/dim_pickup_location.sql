@@ -1,7 +1,7 @@
 {{ config(materialized = 'table') }}
 
 with pickup_location as (
-    select pickup_location_id,
+    select distinct pickup_location_id,
         pickup_latitude,
         pickup_longitude
     from staging.nyc_taxi

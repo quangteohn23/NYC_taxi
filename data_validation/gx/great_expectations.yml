@@ -10,27 +10,26 @@ stores:
     store_backend:
       class_name: TupleFilesystemStoreBackend
       base_directory: expectations/
-  
+
   validations_store:
     class_name: ValidationsStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
       base_directory: uncommitted/validations/
-  
+
   evaluation_parameter_store:
     class_name: EvaluationParameterStore
-    
   checkpoint_store:
     class_name: CheckpointStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
       base_directory: checkpoints/
-  
+
   profiler_store:
     class_name: ProfilerStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      suppress_store_backend:_id: true
+      suppress_store_backend_id: true
       base_directory: profilers/
 
 expectations_store_name: expectations_store
@@ -61,10 +60,12 @@ fluent_datasources:
         batch_metadata: {}
         table_name: nyc_taxi
         schema_name: staging
-    connection_string: postgresql+psycopg2://nyc_taxi:nyc_taxi@localhost:5434/nyc_taxi
-
+      postgres_taxi_data_sample:
+        type: query
+        query: SELECT * FROM staging.nyc_taxi LIMIT 10000
+    connection_string: postgresql+psycopg2://nyc_taxi:nyc_taxi@localhost:5432/nyc_taxi
 notebooks:
 include_rendered_content:
   globally: false
-  expectations_suite: false
+  expectation_suite: false
   expectation_validation_result: false

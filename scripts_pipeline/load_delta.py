@@ -19,7 +19,7 @@ CFG_FILE = "./config/datalake.yaml"
 
 cfg = load_cfg(CFG_FILE)
 datalake_cfg = cfg["datalake"]
-YEARS_TO_PROCESS = ["2022", "2023", "2024"]
+YEARS_TO_PROCESS = ["2024"]
 
 MINIO_ENDPOINT = datalake_cfg["endpoint"]
 MINIO_ACCESS_KEY = datalake_cfg["access_key"]
@@ -35,8 +35,8 @@ def load_to_delta (endpoint_url, access_key, secret_key):
 
     builder = SparkSession.builder \
         .appName("Converting to Delta Lake") \
-        .config("spark.driver.memory", "3g") \
-        .config("spark.executor.memory", "3g") \
+        .config("spark.driver.memory", "2g") \
+        .config("spark.executor.memory", "2g") \
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
         .config("spark.hadoop.fs.s3a.access.key", access_key) \

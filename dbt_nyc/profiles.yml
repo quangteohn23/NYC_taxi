@@ -4,7 +4,7 @@ dbt_nyc:
     dev:
       type: postgres
       host: localhost
-      port: 5434
+      port: 5432
       user: nyc_taxi
       pass: nyc_taxi
       database: nyc_taxi
@@ -12,7 +12,7 @@ dbt_nyc:
     prod:
       type: postgres
       host: localhost
-      port: 5434
+      port: 5432
       user: nyc_taxi
       pass: nyc_taxi
       database: nyc_taxi
