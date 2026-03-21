@@ -1,0 +1,14 @@
+{
+  "name": "cdc_taxi",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgresql",
+    "database.port": "5432",
+    "database.user": "nyc_taxi",
+    "database.password": "nyc_taxi",
+    "database.dbname": "nyc_taxi",
+    "plugin.name": "pgoutput",
+    "database.server.name": "device",
+    "table.include.list": "iot.taxi_nyc_time_series"
+  }
+}
