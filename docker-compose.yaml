@@ -18,21 +18,10 @@ services:
       MINIO_ROOT_USER: minio_access_key
       MINIO_ROOT_PASSWORD: minio_secret_key
     command: server --console-address ":9001" /data
-    mem_limit: 512m
-
-  # source-postgres:
-  #   image: postgres:14
-  #   container_name: source-postgres
-  #   command: ["postgres", "-c", "wal_level=logical"]
-  #   ports:
-  #     - "5433:5432"
-  #   environment:
-  #     POSTGRES_DB: source_db
-  #     POSTGRES_USER: source_user
-  #     POSTGRES_PASSWORD: source_pass
-  #   volumes:
-  #     - source_postgres_data:/var/lib/postgresql/data
-  #   mem_limit: 512m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   dw-postgresql:
     image: postgres:14
@@ -51,7 +40,10 @@ services:
       test: ["CMD", "pg_isready", "-U", "nyc_taxi"]
       interval: 10s
       retries: 5
-    mem_limit: 512m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   # =====================================================
   # ====================== AIRFLOW ======================
@@ -70,7 +62,10 @@ services:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
       retries: 5
-    mem_limit: 256m
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   airflow-init:
     build: ./airflow
@@ -83,7 +78,10 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     entrypoint: /bin/bash
     command: -c "airflow db upgrade && airflow users create --username airflow --password airflow --firstname admin --lastname user --role Admin --email admin@example.com"
-    mem_limit: 512m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   airflow-webserver:
     build: ./airflow
@@ -100,7 +98,10 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
-    mem_limit: 768m
+    deploy:
+      resources:
+        limits:
+          memory: 768M
 
   airflow-scheduler:
     build: ./airflow
@@ -115,7 +116,10 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
-    mem_limit: 768m
+    deploy:
+      resources:
+        limits:
+          memory: 768M
 
   # =====================================================
   # ===================== STREAMING =====================
@@ -129,7 +133,14 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    mem_limit: 256m
+    healthcheck:
+      test: echo srvr | nc localhost 2181 || exit 1
+      interval: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   broker:
     image: confluentinc/cp-server:7.5.0
@@ -146,9 +157,53 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # CẤU HÌNH QUAN TRỌNG CHO 1 BROKER:
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_REDIS_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_METADATA_TOPIC_REPLICATION_FACTOR: 1
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
       KAFKA_HEAP_OPTS: "-Xms512M -Xmx512M" # QUAN TRỌNG: Giới hạn RAM cho Kafka
       CONFLUENT_METRICS_ENABLE: "false"
-    mem_limit: 1.5g
+      CONFLUENT_SUPPORT_CUSTOMER_ID: "anonymous"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-cluster cluster-id --bootstrap-server localhost:9092 || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    container_name: streaming-schema-registry
+    depends_on:
+      broker:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "broker:29092"
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   debezium:
     image: debezium/connect:1.9
@@ -157,6 +212,19 @@ services:
       - broker
     ports:
       - "8083:8083"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "--silent",
+          "--fail",
+          "-X",
+          "GET",
+          "http://localhost:8083/connectors",
+        ]
+      interval: 10s
+      retries: 5
     environment:
       BOOTSTRAP_SERVERS: broker:29092
       GROUP_ID: 1
@@ -167,18 +235,52 @@ services:
       VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_TOPIC_CREATION_ENABLE: "true"
       KAFKA_HEAP_OPTS: "-Xms512M -Xmx512M" # QUAN TRỌNG: Giới hạn RAM cho Debezium
-    mem_limit: 1g
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  akhq:
+    image: tchiotludo/akhq:latest
+    container_name: streaming-akhq
+    ports:
+      - "8086:8080"
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: "broker:29092"
+              schema-registry:
+                url: "http://schema-registry:8081"
+              connect:
+                - name: "debezium"
+                  url: "http://debezium:8083"
+    depends_on:
+      broker:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   debezium-ui:
     image: debezium/debezium-ui:latest
     container_name: debezium-ui
     depends_on:
-      - debezium
+      debezium:
+        condition: service_healthy
     ports:
       - "8085:8080"
     environment:
       KAFKA_CONNECT_URIS: http://debezium:8083
-    mem_limit: 256m
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
 # =====================================================
 # ====================== VOLUMES ======================
