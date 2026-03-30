@@ -32,29 +32,13 @@ models:
         tests:
           - not_null
 
-  - name: dim_dropoff_location
-    columns:
-      - name: dropoff_location_id
-        tests:
-          - unique
-          - not_null
-      - name: dropoff_latitude
-        tests:
-          - not_null
-      - name: dropoff_longitude
-        tests:
-          - not_null
-
-  - name: dim_pickup_location
+  - name: dim_location
     columns:
       - name: pickup_location_id
         tests:
           - unique
           - not_null
-      - name: pickup_latitude
-        tests:
-          - not_null
-      - name: pickup_longitude
+      - name: dropoff_location_id
         tests:
           - not_null
 

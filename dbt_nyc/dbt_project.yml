@@ -31,6 +31,14 @@ clean-targets: # directories to be removed by `dbt clean`
 models:
   dbt_nyc:
     # Config indicated by + and applies to all files under models/example/
+    staging:
+      +schema: staging
+      +materialized: ephemeral
+    # Lớp Production:
     production:
       +schema: production
+      # Mặc định tất cả là view để tiết kiệm ổ cứng (áp dụng cho các bảng Dim)
       +materialized: view
+
+      # Riêng bảng fact_trip, chúng ta sẽ ghi đè cấu hình trong file .sql
+      # để nó là 'incremental'. dbt sẽ ưu tiên cấu hình trong file .sql hơn ở đây.

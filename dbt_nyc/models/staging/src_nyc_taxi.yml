@@ -1,0 +1,6 @@
+version: 2
+sources:
+  - name: postgres_source
+    schema: staging
+    tables:
+      - name: nyc_taxi
