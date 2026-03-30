@@ -1,45 +1,45 @@
-{{ config(materialized = 'table') }}
+{{ 
+    config(
+        materialized = 'incremental',
+        unique_key = 'trip_id'
+    ) 
+}}
 
-with trip_staging as (
+with trip_data as (
     select 
-        -- identifiers
-        {{ dbt_utils.surrogate_key(['f.vendor_id', 'f.rate_code_id', 'f.pickup_location_id', 'f.dropoff_location_id','f.payment_type_id', 'f.service_type', 'f.pickup_datetime', 'f.dropoff_datetime']) }} as trip_id,
-        dv.vendor_key,
-        dr.rate_code_key,
-        f.pickup_location_id,
-        f.dropoff_location_id,
-        dp.payment_type_key,
-        f.service_type as service_type_id,
+        {{ dbt_utils.surrogate_key(['vendor_id', 'rate_code_id', 'pickup_location_id', 'dropoff_location_id', 'pickup_datetime']) }} as trip_id,
+        *
+    from {{ ref('stg_nyc_taxi') }}
+    where 1=1
+    
+    -- Lọc theo biến để nạp từng tháng
+    {% if var('start_date', none) and var('end_date', none) %}
+        and pickup_datetime >= '{{ var("start_date") }}' 
+        and pickup_datetime < '{{ var("end_date") }}'
+    {% endif %}
 
-        -- timestamps
-        f.pickup_datetime,
-        f.dropoff_datetime,
-
-        -- trip info
-        f.passenger_count,
-        f.trip_distance,
-
-        -- payment info
-        f.extra,
-        f.mta_tax,
-        f.fare_amount,
-        f.tip_amount,
-        f.tolls_amount,
-        f.total_amount,
-        f.improvement_surcharge,
-        f.congestion_surcharge
-
-    from 
-        staging.nyc_taxi as f
-    join 
-        production.dim_vendor as dv ON f.vendor_id = dv.vendor_id
-    join
-        production.dim_rate_code as dr ON f.rate_code_id = dr.rate_code_id
-    join
-        production.dim_payment as dp ON f.payment_type_id = dp.payment_type_id
+    -- Logic nạp thêm dữ liệu tự động cho sau này
+    {% if is_incremental() %}
+        and pickup_datetime > (select max(pickup_datetime) from {{ this }})
+    {% endif %}
 )
 
-select
-    *
-from 
-    trip_staging
+select 
+    t.trip_id,
+    dv.vendor_key,
+    dr.rate_code_key,
+    dp.payment_type_key,
+    t.service_type as service_type_id,
+    t.pickup_location_id,
+    t.dropoff_location_id,
+    t.pickup_datetime,
+    t.dropoff_datetime,
+    t.passenger_count,
+    t.trip_distance,
+    t.fare_amount,
+    t.tip_amount,
+    t.total_amount
+from trip_data t
+left join {{ ref('dim_vendor') }} dv on t.vendor_id = dv.vendor_id
+left join {{ ref('dim_rate_code') }} dr on t.rate_code_id = dr.rate_code_id
+left join {{ ref('dim_payment') }} dp on t.payment_type_id = dp.payment_type_id
