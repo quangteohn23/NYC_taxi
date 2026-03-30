@@ -2,7 +2,7 @@
   "name": "cdc_taxi",
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-    "database.hostname": "postgresql",
+    "database.hostname": "dw-postgresql",
     "database.port": "5432",
     "database.user": "nyc_taxi",
     "database.password": "nyc_taxi",
