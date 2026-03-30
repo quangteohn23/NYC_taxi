@@ -37,25 +37,19 @@ class PostgresSQLClient:
 
 
     def get_columns(self, table_name):
-        # lấy danh sách tên cột của 1 bảng
-        # engine = create_engine(
-        #     f"postgresql+psycopg2://{self.user}:{self.password}@{self.host}:{self.port}"
-        # )
-        # conn = engine.connect()
-        # df = pd.read_sql(f"select * from {table_name}", conn)
-        # return df.columns
-
+        pure_table_name = table_name.split('.')[-1]
+        
         query = f"""
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = '{table_name.split('.')[-1]}'
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = '{pure_table_name}'
             ORDER BY ordinal_position
         """
-        engine = create_engine(
-            f"postgresql+psycopg2://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-        )
-
-        with engine.connect() as conn:
-            df = pd.read_sql(query,conn)
-        
-        return df["column_name"].tolist()
+        conn = self.create_conn()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query)
+                columns = [row[0] for row in cursor.fetchall()]
+            return columns
+        finally:
+            conn.close()
