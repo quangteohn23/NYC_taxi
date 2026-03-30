@@ -81,15 +81,13 @@ def create_spark_session():
 def process_dataframe(df, file_path):
     from pyspark.sql import functions as F
     
-    # 1. Tự động nhận diện cột Pickup và Dropoff (vì Yellow và Green khác nhau)
     pickup_col = "tpep_pickup_datetime" if "tpep_pickup_datetime" in df.columns else \
                  ("lpep_pickup_datetime" if "lpep_pickup_datetime" in df.columns else "pickup_datetime")
     
     dropoff_col = "tpep_dropoff_datetime" if "tpep_dropoff_datetime" in df.columns else \
                   ("lpep_dropoff_datetime" if "lpep_dropoff_datetime" in df.columns else "dropoff_datetime")
 
-    # 2. Đồng nhất hóa tên cột (Rename) trước khi xử lý
-    # Điều này giúp các file Yellow và Green trở nên giống hệt nhau
+    #  Đồng nhất hóa tên cột (Rename) trước khi xử lý
     df_standard = df.withColumnRenamed(pickup_col, "pickup_datetime") \
                     .withColumnRenamed(dropoff_col, "dropoff_datetime") \
                     .withColumnRenamed("vendorid", "vendor_id") \
@@ -131,10 +129,15 @@ def process_dataframe(df, file_path):
         F.sum('congestion_surcharge').alias('congestion_surcharge')
     )
 
-    # 5. Gán loại dịch vụ (1: Yellow, 2: Green)
-    service_type = 1 if 'yellow' in file_path.lower() else 2
+    # 5. Gán loại dịch vụ
+    file_name = file_path.lower()
+    if 'yellow' in file_name:
+        service_type = 1
+    elif 'green' in file_name:
+        service_type = 2
+    else:
+        service_type = 3
     df_final = df_final.withColumn('service_type', F.lit(service_type))
-
     return df_final
 def load_to_staging_table(df):
     """
