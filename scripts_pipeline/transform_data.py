@@ -14,12 +14,11 @@ from helpers import load_cfg
 from minio_utils import MinIOClient
 
 DATA_PATH = "data/"
-YEARS = ["2024"]
+YEARS = ["2026"]
 TAXI_ZONE_LOOKUP_PATH = os.path.join(os.path.dirname(__file__), "data", "taxi_zone_lookup.csv")
 CFG_FILE =  "config/datalake.yaml"
 
 def drop_column(df,file):
-    # Drop columns 'store_and_fwd_flag'
     if "store_and_fwd_flag" in df.columns:
         df = df.drop(columns = ["store_and_fwd_flag"])
         print("Dropped column store_and_fwd_flag from file: " + file)
@@ -29,7 +28,6 @@ def drop_column(df,file):
     return df
 
 def merge_taxi_zone (df,file):
-    # Merge dataset with taxi_zone_lookup
 
     df_lookup = pd.read_csv(TAXI_ZONE_LOOKUP_PATH)
     def merge_and_rename(df, location_id, lat_col, long_col):
@@ -61,7 +59,6 @@ def process(df, file):
     """
     
     if file.startswith("green"):
-        # rename columns
         df.rename(
             columns={
                 "lpep_pickup_datetime": "pickup_datetime",
@@ -71,17 +68,27 @@ def process(df, file):
             inplace=True
         )
 
-        # drop column
         if "trip_type" in df.columns:
             df.drop(columns=["trip_type"], inplace=True)
 
     elif file.startswith("yellow"):
-        # rename columns
         df.rename(
             columns={
                 "tpep_pickup_datetime": "pickup_datetime",
                 "tpep_dropoff_datetime": "dropoff_datetime",
                 "airport_fee": "fee"
+            },
+            inplace=True
+        )
+    elif file.startswith("fhvhv"):
+        df.rename(
+            columns={
+                "pickup_datetime": "pickup_datetime",
+                "dropoff_datetime": "dropoff_datetime",
+                "base_passenger_fare": "fare_amount", 
+                "tips": "tip_amount",                
+                "trip_miles": "trip_distance",        
+                "hvfhs_license_num": "vendorid"      
             },
             inplace=True
         )
@@ -96,11 +103,9 @@ def process(df, file):
     if "vendorid" in df.columns:
         df["vendorid"] = df["vendorid"].astype(int)
 
-    # drop column 'fee'
     if "fee" in df.columns:
         df.drop(columns=["fee"], inplace=True)
                 
-    # Remove missing data
     df = df.dropna()
     df = df.reindex(sorted(df.columns), axis=1)
     
@@ -136,7 +141,6 @@ def transform_data(endpoint_url, access_key, secret_key):
             df = pd.read_parquet(file, engine='pyarrow')
             df.columns = map(str.lower, df.columns)
 
-            # Thực hiện các bước biến đổi
             df = drop_column(df, file_name)
             df = merge_taxi_zone(df, file_name)
             df = process(df, file_name)

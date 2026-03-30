@@ -12,7 +12,7 @@ from helpers import load_cfg
 from minio_utils import MinIOClient
 
 CFG_FILE = "./config/datalake.yaml"
-YEARS = ["2024"]
+YEARS = ["2026"]
 
 def extract_load(endpoint_url, access_key, secret_key):
     cfg = load_cfg(CFG_FILE)

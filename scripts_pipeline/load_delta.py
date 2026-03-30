@@ -19,7 +19,7 @@ CFG_FILE = "./config/datalake.yaml"
 
 cfg = load_cfg(CFG_FILE)
 datalake_cfg = cfg["datalake"]
-YEARS_TO_PROCESS = ["2024"]
+YEARS_TO_PROCESS = ["2026"]
 
 MINIO_ENDPOINT = datalake_cfg["endpoint"]
 MINIO_ACCESS_KEY = datalake_cfg["access_key"]
