@@ -80,39 +80,56 @@ def create_spark_session():
 
 def process_dataframe(df, file_path):
     from pyspark.sql import functions as F
-    
-    pickup_col = "tpep_pickup_datetime" if "tpep_pickup_datetime" in df.columns else \
-                 ("lpep_pickup_datetime" if "lpep_pickup_datetime" in df.columns else "pickup_datetime")
-    
-    dropoff_col = "tpep_dropoff_datetime" if "tpep_dropoff_datetime" in df.columns else \
-                  ("lpep_dropoff_datetime" if "lpep_dropoff_datetime" in df.columns else "dropoff_datetime")
+    from pyspark.sql.types import DoubleType, IntegerType
 
-    #  Đồng nhất hóa tên cột (Rename) trước khi xử lý
-    df_standard = df.withColumnRenamed(pickup_col, "pickup_datetime") \
-                    .withColumnRenamed(dropoff_col, "dropoff_datetime") \
+    # 1. Chuyển tất cả tên cột về chữ thường
+    df = df.toDF(*[c.lower() for c in df.columns])
+    
+    # 2. Xác định cột datetime chuẩn
+    actual_pickup = "pickup_datetime" if "pickup_datetime" in df.columns else \
+                    ("tpep_pickup_datetime" if "tpep_pickup_datetime" in df.columns else "lpep_pickup_datetime")
+    
+    actual_dropoff = "dropoff_datetime" if "dropoff_datetime" in df.columns else \
+                     ("tpep_dropoff_datetime" if "tpep_dropoff_datetime" in df.columns else "lpep_dropoff_datetime")
+
+    # 3. Rename và ép kiểu cơ bản
+    df_standard = df.withColumnRenamed(actual_pickup, "pickup_datetime") \
+                    .withColumnRenamed(actual_dropoff, "dropoff_datetime") \
                     .withColumnRenamed("vendorid", "vendor_id") \
-                    .withColumnRenamed("VendorID", "vendor_id") \
-                    .withColumnRenamed("ratecodeid", "rate_code_id") \
-                    .withColumnRenamed("RatecodeID", "rate_code_id") \
                     .withColumnRenamed("pulocationid", "pickup_location_id") \
-                    .withColumnRenamed("PULocationID", "pickup_location_id") \
                     .withColumnRenamed("dolocationid", "dropoff_location_id") \
-                    .withColumnRenamed("DOLocationID", "dropoff_location_id") \
-                    .withColumnRenamed("payment_type", "payment_type_id")
+                    .withColumnRenamed("payment_type", "payment_type_id") \
+                    .withColumnRenamed("ratecodeid", "rate_code_id")
 
-    # 3. Tạo các cột phái sinh (year, month, dow) và tọa độ giả
+    # 4. Xử lý các cột số (Đảm bảo luôn tồn tại để không bị lỗi hàm SUM)
+    numeric_cols = ['passenger_count', 'trip_distance', 'extra', 'mta_tax', 'fare_amount', 
+                    'tip_amount', 'tolls_amount', 'total_amount', 'improvement_surcharge', 'congestion_surcharge']
+    
+    for c in numeric_cols:
+        if c not in df_standard.columns:
+            df_standard = df_standard.withColumn(c, F.lit(0.0).cast(DoubleType()))
+        else:
+            df_standard = df_standard.withColumn(c, F.col(c).cast(DoubleType()))
+
+    # 5. Xử lý tọa độ (Nếu transform_data.py chưa tạo, ta tạo mặc định để không lỗi groupBy)
+    geo_cols = ['pickup_latitude', 'pickup_longitude', 'dropoff_latitude', 'dropoff_longitude']
+    for c in geo_cols:
+        if c not in df_standard.columns:
+            df_standard = df_standard.withColumn(c, F.lit(0.0).cast(DoubleType()))
+
+    # 6. Gán service_type
+    file_name = file_path.lower()
+    service_type = 1 if 'yellow' in file_name else (2 if 'green' in file_name else 3)
+    
     df_enriched = df_standard.withColumn('year', F.year('pickup_datetime').cast("string")) \
-                            .withColumn('month', F.date_format('pickup_datetime', 'MMMM')) \
-                            .withColumn('dow', F.date_format('pickup_datetime', 'EEEE')) \
-                            .withColumn('pickup_latitude', F.lit(0.0).cast("double")) \
-                            .withColumn('pickup_longitude', F.lit(0.0).cast("double")) \
-                            .withColumn('dropoff_latitude', F.lit(0.0).cast("double")) \
-                            .withColumn('dropoff_longitude', F.lit(0.0).cast("double"))
+                             .withColumn('month', F.date_format('pickup_datetime', 'MMMM')) \
+                             .withColumn('dow', F.date_format('pickup_datetime', 'EEEE')) \
+                             .withColumn('service_type', F.lit(service_type).cast(IntegerType()))
 
-    # 4. Gom nhóm (Aggregate)
-    # Lưu ý: Ta gom nhóm để dữ liệu gọn nhẹ hơn trước khi đẩy vào Postgres (tốt cho máy 16GB)
+    # 7. GroupBy và Aggregate
+    # Lưu ý: Thêm 'service_type' vào groupBy để phân biệt Green/Yellow trong DB
     df_final = df_enriched.groupBy(
-        'year', 'month', 'dow',
+        'year', 'month', 'dow', 'service_type',
         'vendor_id', 'rate_code_id', 'pickup_location_id', 'dropoff_location_id', 'payment_type_id',
         'pickup_datetime', 'dropoff_datetime',
         'pickup_latitude', 'pickup_longitude', 'dropoff_latitude', 'dropoff_longitude'
@@ -128,16 +145,7 @@ def process_dataframe(df, file_path):
         F.sum('improvement_surcharge').alias('improvement_surcharge'),
         F.sum('congestion_surcharge').alias('congestion_surcharge')
     )
-
-    # 5. Gán loại dịch vụ
-    file_name = file_path.lower()
-    if 'yellow' in file_name:
-        service_type = 1
-    elif 'green' in file_name:
-        service_type = 2
-    else:
-        service_type = 3
-    df_final = df_final.withColumn('service_type', F.lit(service_type))
+    
     return df_final
 def load_to_staging_table(df):
     """
@@ -171,8 +179,6 @@ if __name__ == "__main__":
         access_key=MINIO_ACCESS_KEY,
         secret_key=MINIO_SECRET_KEY
     )
-
-    # Xử lý tuần tự từng file để bảo vệ RAM 16GB
     parquet_files = client.list_parquet_files(BUCKET_NAME, prefix='batch/')
     
     for file in parquet_files:

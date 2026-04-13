@@ -10,7 +10,7 @@ load_dotenv(".env")
 from postgresql_client import PostgresSQLClient
 
 TABLE_NAME = "iot.taxi_nyc_time_series"
-PARQUET_FILE = "./data/2026/fhvhv_tripdata_2026-01.parquet"
+PARQUET_FILE = "./data/2026/yellow_tripdata_2026-01.parquet"
 NUM_ROWS = 10000
 
 OFFSET_FILE = "utils/last_offset.txt"

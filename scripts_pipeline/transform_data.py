@@ -14,7 +14,7 @@ from helpers import load_cfg
 from minio_utils import MinIOClient
 
 DATA_PATH = "data/"
-YEARS = ["2026"]
+YEARS = ["2024"]
 TAXI_ZONE_LOOKUP_PATH = os.path.join(os.path.dirname(__file__), "data", "taxi_zone_lookup.csv")
 CFG_FILE =  "config/datalake.yaml"
 

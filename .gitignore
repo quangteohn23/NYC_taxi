@@ -4,8 +4,9 @@
 /jars/*
 **/logs/
 test.py
-/airflow/logs/*
-logs/
+# /airflow/logs/*
+# logs/
+
 
 venv/
 venv_airflow/
@@ -14,8 +15,11 @@ bin/
 lib/
 include/
 
+last_offset.txt
+
+.codex
 airflow/airflow.db
 airflow/airflow-webserver.pid
 
-
+.env*
 

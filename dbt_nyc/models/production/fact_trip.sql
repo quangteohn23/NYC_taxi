@@ -1,3 +1,8 @@
+-- depends_on: {{ ref('stg_nyc_taxi') }}
+-- depends_on: {{ ref('dim_vendor') }}
+-- depends_on: {{ ref('dim_rate_code') }}
+-- depends_on: {{ ref('dim_payment') }}
+
 {{ 
     config(
         materialized = 'incremental',
